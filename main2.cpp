@@ -1,6 +1,8 @@
 #include <SFML/Graphics.hpp>
 #include <GL/glew.h>
 
+#include <GLFW/glfw3.h>
+#include <stb_image.h>
 #include <algorithm>
 #include <iostream>
 #include <vector>
@@ -23,7 +25,8 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-
+// lighting
+glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 void checkOpenGLerror() {
     /*
     GLenum error;
@@ -116,7 +119,44 @@ void processInput(sf::Window& window)
     // Обрабатываем движение мыши через камеру
     camera.ProcessMouseMovement(xoffset, yoffset);
 }
+// utility function for loading a 2D texture from file
+// ---------------------------------------------------
+unsigned int loadTexture(char const* path)
+{
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
 
+    int width, height, nrComponents;
+    unsigned char* data = stbi_load(path, &width, &height, &nrComponents, 0);
+    if (data)
+    {
+        GLenum format;
+        if (nrComponents == 1)
+            format = GL_RED;
+        else if (nrComponents == 3)
+            format = GL_RGB;
+        else if (nrComponents == 4)
+            format = GL_RGBA;
+
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+        stbi_image_free(data);
+    }
+    else
+    {
+        std::cout << "Texture failed to load at path: " << path << std::endl;
+        stbi_image_free(data);
+    }
+
+    return textureID;
+}
 int main()
 {
     setlocale(LC_ALL, "ru");
@@ -130,200 +170,239 @@ int main()
 
     Init();
 
-    Shader asteroidShader("10.3.asteroids.vs", "10.3.asteroids.fs");
-    Shader planetShader("10.3.planet.vs", "10.3.planet.fs");
+    // build and compile our shader zprogram
+    // ------------------------------------
+    //Shader lightingShader("5.4.light_casters.vs", "5.4.light_casters.fs");
+    //Shader lightCubeShader("5.4.light_cube.vs", "5.4.light_cube.fs");
 
-    // load models
-    // -----------
-    Model planet("resources/planet/Krosh.obj");
-    Model rock("resources/rock/model.obj");
+    //Shader lightingShader("5.1.light_casters.vs", "5.1.light_casters.fs");
+    //Shader lightCubeShader("5.1.light_cube.vs", "5.1.light_cube.fs");
+
+    Shader lightingShader("5.2.light_casters.vs", "5.2.light_casters.fs");
+    Shader lightCubeShader("5.2.light_cube.vs", "5.2.light_cube.fs");
+
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+     // ------------------------------------------------------------------
+    float vertices[] = {
+        // positions          // normals           // texture coords
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.0f,  0.0f,
+
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.0f,  1.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  0.0f,  0.0f,
+
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  0.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,  1.0f,  0.0f,
+
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,  0.0f,  1.0f,
+
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f,
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  1.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  1.0f,  0.0f,
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  0.0f,
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,  0.0f,  1.0f
+    };
+    // positions all containers
+    glm::vec3 cubePositions[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3(2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3(1.3f, -2.0f, -2.5f),
+        glm::vec3(1.5f,  2.0f, -2.5f),
+        glm::vec3(1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
 
     
 
-    // generate a large list of semi-random model transformation matrices
-    // ------------------------------------------------------------------
-    unsigned int amount = 1000;
-    glm::mat4* modelMatrices;
-    modelMatrices = new glm::mat4[amount];
-    srand(static_cast<unsigned int>(time(NULL))); // initialize random seed
-    float radius = 75.0;
-    float offset = 25.0f;
+    // first, configure the cube's VAO (and VBO)
+    unsigned int VBO, cubeVAO;
+    glGenVertexArrays(1, &cubeVAO);
+    glGenBuffers(1, &VBO);
 
-    std::vector<glm::vec3> initialPositions(amount);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    for (unsigned int i = 0; i < amount; i++)
-    {
-        glm::mat4 model = glm::mat4(1.0f);
-        // 1. translation: displace along circle with 'radius' in range [-offset, offset]
-        float angle = (float)i / (float)amount * 360.0f;
-        float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-        float x = sin(angle) * radius + displacement;
-        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-        float y = displacement * 0.4f; // keep height of asteroid field smaller compared to width of x and z
-        displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
-        float z = cos(angle) * radius + displacement;
-        model = glm::translate(model, glm::vec3(x, y, z));
+    glBindVertexArray(cubeVAO);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
-        // 2. scale: Scale between 0.05 and 0.25f
-        float scale = static_cast<float>((rand() % 20) / 100.0 + 0.05);
-        model = glm::scale(model, glm::vec3(scale));
+    // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+    unsigned int lightCubeVAO;
+    glGenVertexArrays(1, &lightCubeVAO);
+    glBindVertexArray(lightCubeVAO);
 
-        // 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
-        float rotAngle = static_cast<float>((rand() % 360));
-        model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
-        initialPositions[i] = glm::vec3(x, y, z);
-        // 4. now add to list of matrices
-        modelMatrices[i] = model;
-    }
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
-    // configure instanced array
-    // -------------------------
-    unsigned int buffer;
-    glGenBuffers(1, &buffer);
-    glBindBuffer(GL_ARRAY_BUFFER, buffer);
-    glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STREAM_DRAW);
+    // load textures (we now use a utility function to keep the code more organized)
+    // -----------------------------------------------------------------------------
+    unsigned int diffuseMap = loadTexture("resources/textures/container2.png");
+    unsigned int specularMap = loadTexture("resources/textures/container2_specular.png");
 
-    // set transformation matrices as an instance vertex attribute (with divisor 1)
-    // note: we're cheating a little by taking the, now publicly declared, VAO of the model's mesh(es) and adding new vertexAttribPointers
-    // normally you'd want to do this in a more organized fashion, but for learning purposes this will do.
-    // -----------------------------------------------------------------------------------------------------------------------------------
-    for (unsigned int i = 0; i < rock.meshes.size(); i++)
-    {
-        unsigned int VAO = rock.meshes[i].VAO;
-        glBindVertexArray(VAO);
-        // set attribute pointers for matrix (4 times vec4)
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
-        glEnableVertexAttribArray(4);
-        glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
-        glEnableVertexAttribArray(5);
-        glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
-        glEnableVertexAttribArray(6);
-        glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
-
-        glVertexAttribDivisor(3, 1);
-        glVertexAttribDivisor(4, 1);
-        glVertexAttribDivisor(5, 1);
-        glVertexAttribDivisor(6, 1);
-
-        glBindVertexArray(0);
-    }
-
-    // GenerateCircleVertexes();
-
+    // shader configuration
+    // --------------------
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse", 0);
+    lightingShader.setInt("material.specular", 1);
     sf::Clock clock;
-
-
-    std::vector<glm::vec3> rotationAxes(amount);
-    std::vector<float> rotationSpeeds(amount);
-    for (unsigned int i = 0; i < amount; i++) {
-        // Случайная ось вращения
-        rotationAxes[i] = glm::normalize(glm::vec3(
-            static_cast<float>(rand() % 100) / 100.0f,
-            static_cast<float>(rand() % 100) / 100.0f,
-            static_cast<float>(rand() % 100) / 100.0f
-        ));
-
-        // Случайная скорость вращения (градусы в секунду)
-        rotationSpeeds[i] = static_cast<float>(rand() % 100) / 10.0f; // от 0 до 10
-    }
-    std::vector<float> orbitAngles(amount, 0.0f);
-    std::vector<float> selfRotationAngles(amount, 0.0f);
-
     // Основной цикл
     while (window.isOpen())
     {
-        // Управление временными логиками
+        // per-frame time logic
+        // --------------------
         float currentFrame = clock.getElapsedTime().asSeconds();
-        deltaTime = (currentFrame - lastFrame)*10;
+        deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // Обработка ввода
+        // input
+        // -----
         processInput(window);
 
-        const float orbitSpeed = 0.1f; // Скорость вращения орбиты
-        for (unsigned int i = 0; i < amount; i++)
-        {
-            // 1. Создаём начальную единичную матрицу
-            glm::mat4 model = glm::mat4(1.0f);
-
-            // 2. Вращение метеорита вокруг орбиты (вокруг "солнца")
-            orbitAngles[i] += orbitSpeed * deltaTime; // `orbitSpeed` в градусах в секунду
-            if (orbitAngles[i] > 360.0f)
-                orbitAngles[i] -= 360.0f; // Сбрасываем угол
-            float orbitAngleRad = glm::radians(orbitAngles[i]);
-
-            // Рассчитываем новую позицию объекта на орбите
-            glm::mat4 orbitRotation = glm::rotate(glm::mat4(1.0f), orbitAngleRad, glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::vec3 position = initialPositions[i]; // Начальная позиция
-            glm::vec4 newPosition = orbitRotation * glm::vec4(position, 1.0f);
-
-            // Перемещение объекта на новую орбитальную позицию
-            model = glm::translate(model, glm::vec3(newPosition));
-
-            // 3. Вращение объекта вокруг своей оси
-            selfRotationAngles[i] += rotationSpeeds[i] * deltaTime; // `rotationSpeeds[i]` в градусах в секунду
-            if (selfRotationAngles[i] > 360.0f) {
-                selfRotationAngles[i] -= 360.0f; // Сбрасываем угол
-            }
-            float selfRotationAngleRad = glm::radians(selfRotationAngles[i]);
-
-            // Добавляем вращение вокруг собственной оси
-            model = glm::rotate(model, selfRotationAngleRad, rotationAxes[i]);
-            model = glm::scale(model, glm::vec3(2.0f, 2.0f, 2.0f));
-            // 4. Сохраняем итоговую матрицу трансформации
-            modelMatrices[i] = model;
-        }
-
-
-
-        // Обновляем буфер
-        glBindBuffer(GL_ARRAY_BUFFER, buffer);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, amount * sizeof(glm::mat4), &modelMatrices[0]);
-
-        // Очистка экрана
+        // render
+        // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // be sure to activate shader when setting uniforms/drawing objects
+        /*lightingShader.use();
+        lightingShader.setVec3("light.position", camera.Position);
+        lightingShader.setVec3("light.direction", camera.Front);
+        lightingShader.setFloat("light.cutOff", glm::cos(glm::radians(12.5f)));
+        lightingShader.setFloat("light.outerCutOff", glm::cos(glm::radians(17.5f)));
+        lightingShader.setVec3("viewPos", camera.Position);
+
+        // light properties
+        lightingShader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
+        // we configure the diffuse intensity slightly higher; the right lighting conditions differ with each lighting method and environment.
+        // each environment and lighting type requires some tweaking to get the best out of your environment.
+        lightingShader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
+        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+        lightingShader.setFloat("light.constant", 1.0f);
+        lightingShader.setFloat("light.linear", 0.09f);
+        lightingShader.setFloat("light.quadratic", 0.032f);
+
+        // material properties
+        lightingShader.setFloat("material.shininess", 32.0f);*/
+        // be sure to activate shader when setting uniforms/drawing objects
 
 
-        // Настройка матриц трансформации
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)800 / (float)600, 0.1f, 1000.0f);
-        glm::mat4 view = camera.GetViewMatrix(); // Предполагаем, что у вас есть объект камеры
-        asteroidShader.use();
-        asteroidShader.setMat4("projection", projection);
-        asteroidShader.setMat4("view", view);
-        planetShader.use();
-        planetShader.setMat4("projection", projection);
-        planetShader.setMat4("view", view);
+        /*lightingShader.use();
+        lightingShader.setVec3("light.direction", -0.2f, -1.0f, -0.3f);
+        lightingShader.setVec3("viewPos", camera.Position);
 
-        // Рисуем планету
+        // light properties
+        lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+        lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+
+        // material properties
+        lightingShader.setFloat("material.shininess", 32.0f);*/
+
+        // be sure to activate shader when setting uniforms/drawing objects
+        lightingShader.use();
+        lightingShader.setVec3("light.position", lightPos);
+        lightingShader.setVec3("viewPos", camera.Position);
+
+        // light properties
+        lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
+        lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+        lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+        lightingShader.setFloat("light.constant", 1.0f);
+        lightingShader.setFloat("light.linear", 0.09f);
+        lightingShader.setFloat("light.quadratic", 0.032f);
+
+        // material properties
+        lightingShader.setFloat("material.shininess", 32.0f);
+
+        // view/projection transformations
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();
+        lightingShader.setMat4("projection", projection);
+        lightingShader.setMat4("view", view);
+
+        // world transformation
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, -3.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(100.0f, 100.0f,100.0f));
-        //float selfRotationAngleRad = glm::radians(selfRotationAngles[0]);
-        //model = glm::rotate(model, selfRotationAngleRad, glm::vec3(0.0f, 1.0f, 0.0f));
-        planetShader.setMat4("model", model);
-        planet.Draw(planetShader);
+        lightingShader.setMat4("model", model);
 
-        // Рисуем метеориты
-        asteroidShader.use();
-        asteroidShader.setInt("texture_diffuse1", 0);
+        // bind diffuse map
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, rock.textures_loaded[0].id);
-        for (unsigned int i = 0; i < rock.meshes.size(); i++) {
-            glBindVertexArray(rock.meshes[i].VAO);
-            glDrawElementsInstanced(GL_TRIANGLES, static_cast<unsigned int>(rock.meshes[i].indices.size()), GL_UNSIGNED_INT, 0, amount);
-            glBindVertexArray(0);
-        }
-        
-        /*for (unsigned int i = 0; i < amount; i++)
+        glBindTexture(GL_TEXTURE_2D, diffuseMap);
+        // bind specular map
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, specularMap);
+
+        // render containers
+        glBindVertexArray(cubeVAO);
+        for (unsigned int i = 0; i < 10; i++)
         {
-            asteroidShader.setMat4("model", modelMatrices[i]);
-           
-            rock.Draw(asteroidShader);
-        }*/
-        
+            // calculate the model matrix for each object and pass it to shader before drawing
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, cubePositions[i]);
+            float angle = 20.0f * i;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            lightingShader.setMat4("model", model);
+
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+        }
+
+        // again, a lamp object is weird when we only have a spot light, don't render the light object
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection", projection);
+        lightCubeShader.setMat4("view", view);
+        model = glm::mat4(1.0f);
+        //model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+        lightCubeShader.setMat4("model", model);
+
+        glBindVertexArray(lightCubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
+        // also draw the lamp object
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection", projection);
+        lightCubeShader.setMat4("view", view);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+        lightCubeShader.setMat4("model", model);
+
+        glBindVertexArray(lightCubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
         // ОбменBuffers
         window.display();
 
