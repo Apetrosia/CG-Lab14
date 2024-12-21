@@ -28,6 +28,8 @@ float lastFrame = 0.0f;
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 int lightType = 2;
 int newLightType = 2;
+int shadingType = 0;
+int newShadingType = 0;
 
 void checkOpenGLerror() {
     /*
@@ -83,6 +85,13 @@ void processInput(sf::Window& window)
         newLightType = 1;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num3))
         newLightType = 2;
+
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num4))
+        newShadingType = 0;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num5))
+        newShadingType = 1;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num6))
+        newShadingType = 2;
 
     // Проверка закрытия окна при нажатии ESC
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
@@ -175,7 +184,7 @@ int main()
 {
     setlocale(LC_ALL, "ru");
 
-    sf::Window window(sf::VideoMode(800, 800), "3D figures", sf::Style::Default, sf::ContextSettings(24));
+    sf::Window window(sf::VideoMode(1000, 800), "Cats", sf::Style::Default, sf::ContextSettings(24));
     window.setVerticalSyncEnabled(true);
 
     window.setMouseCursorVisible(false);
@@ -186,7 +195,6 @@ int main()
 
     // Точечный источник света
     Shader lightingShader("5.2.light_casters.vs", "5.2.light_casters.fs");
-    Shader lightCubeShader("5.2.light_cube.vs", "5.2.light_cube.fs");
 
     vector<Model> models;
 
@@ -210,6 +218,18 @@ int main()
         glm::vec3( 2.0f, -0.7f, 0.0f),
         glm::vec3( -1.0f,  2.7f, 0.0f),
         glm::vec3(-4.0f, -0.5f, 0.0f),
+    };
+
+    Shader shaders[] = {
+        Shader("5.4.light_casters.vs", "5.4.light_casters.fs"),
+        Shader("5.4.toonshading.vs", "5.4.toonshading.fs"),
+        Shader("5.4.light_casters.vs", "5.4.light_casters.fs"),
+        Shader("5.1.light_casters.vs", "5.1.light_casters.fs"),
+        Shader("5.1.toonshading.vs", "5.1.toonshading.fs"),
+        Shader("5.1.light_casters.vs", "5.1.light_casters.fs"),
+        Shader("5.2.light_casters.vs", "5.2.light_casters.fs"),
+        Shader("5.2.toonshading.vs", "5.2.toonshading.fs"),
+        Shader("5.2.light_casters.vs", "5.2.light_casters.fs")
     };
 
     // load textures (we now use a utility function to keep the code more organized)
@@ -247,10 +267,11 @@ int main()
         // Прожектор
         if (newLightType == 0)
         {
-            if (newLightType != lightType)
+            if (newLightType != lightType || newShadingType != shadingType)
             {
-                lightingShader = Shader("5.4.light_casters.vs", "5.4.light_casters.fs");
                 lightType = newLightType;
+                shadingType = newShadingType;
+                lightingShader = shaders[lightType * 3 + shadingType];
             }
 
             lightingShader.use();
@@ -278,10 +299,11 @@ int main()
         // Направленный источник света
         else if (newLightType == 1)
         {
-            if (newLightType != lightType)
+            if (newLightType != lightType || newShadingType != shadingType)
             {
-                lightingShader = Shader("5.1.light_casters.vs", "5.1.light_casters.fs");
                 lightType = newLightType;
+                shadingType = newShadingType;
+                lightingShader = shaders[lightType * 3 + shadingType];
             }
 
             lightingShader.use();
@@ -299,10 +321,11 @@ int main()
         // Точечный источник света
         else if (newLightType == 2)
         {
-            if (newLightType != lightType)
+            if (newLightType != lightType || newShadingType != shadingType)
             {
-                lightingShader = Shader("5.2.light_casters.vs", "5.2.light_casters.fs");
                 lightType = newLightType;
+                shadingType = newShadingType;
+                lightingShader = shaders[lightType * 3 + shadingType];
             }
 
             // be sure to activate shader when setting uniforms/drawing objects
@@ -345,21 +368,6 @@ int main()
             model = glm::scale(model, glm::vec3(scales[i], scales[i], scales[i]));
             lightingShader.setMat4("model", model);
             models[i].Draw(lightingShader);
-        }
-
-        if (lightType == 2)
-        {
-            // also draw the lamp object
-            lightCubeShader.use();
-            lightCubeShader.setMat4("projection", projection);
-            lightCubeShader.setMat4("view", view);
-            model = glm::mat4(1.0f);
-            model = glm::translate(model, lightPos);
-            model = glm::scale(model, glm::vec3(0.2f));
-            lightCubeShader.setMat4("model", model);
-
-            //glBindVertexArray(lightCubeVAO);
-            //glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
         // ОбменBuffers
