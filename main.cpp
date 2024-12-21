@@ -223,19 +223,14 @@ int main()
     Shader shaders[] = {
         Shader("5.4.light_casters.vs", "5.4.light_casters.fs"),
         Shader("5.4.toonshading.vs", "5.4.toonshading.fs"),
-        Shader("5.4.light_casters.vs", "5.4.light_casters.fs"),
+        Shader("5.4.rim.vs", "5.4.rim.fs"),
         Shader("5.1.light_casters.vs", "5.1.light_casters.fs"),
         Shader("5.1.toonshading.vs", "5.1.toonshading.fs"),
-        Shader("5.1.light_casters.vs", "5.1.light_casters.fs"),
+        Shader("5.1.rim.vs", "5.1.rim.fs"),
         Shader("5.2.light_casters.vs", "5.2.light_casters.fs"),
         Shader("5.2.toonshading.vs", "5.2.toonshading.fs"),
-        Shader("5.2.light_casters.vs", "5.2.light_casters.fs")
+        Shader("5.2.rim.vs", "5.2.rim.fs")
     };
-
-    // load textures (we now use a utility function to keep the code more organized)
-    // -----------------------------------------------------------------------------
-    unsigned int diffuseMap = loadTexture("resources/textures/container2.png");
-    unsigned int specularMap = loadTexture("resources/textures/container2_specular.png");
 
     // shader configuration
     // --------------------
