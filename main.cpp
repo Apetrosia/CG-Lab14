@@ -190,18 +190,26 @@ int main()
 
     vector<Model> models;
 
-    models.push_back(Model("resources/rock/model.obj"));
-    models.push_back(Model("resources/rock/model.obj"));
-    models.push_back(Model("resources/rock/model.obj"));
-    models.push_back(Model("resources/rock/model.obj"));
-    models.push_back(Model("resources/rock/model.obj"));
+    models.push_back(Model("resources/objs/bananaCat.obj"));
+    models.push_back(Model("resources/objs/GrumpyCat.obj"));
+    models.push_back(Model("resources/objs/Gato.obj"));
+    models.push_back(Model("resources/objs/StandingCat.obj"));
+    models.push_back(Model("resources/objs/Sherlock.obj"));
+
+    float scales[] = {
+        1.0f,
+        2.5f,
+        0.04f,
+        0.01f,
+        6.0f
+    };
 
     glm::vec3 objPosition[] = {
-        glm::vec3(0.0f,  0.0f,  0.0f),
-        glm::vec3(2.0f,  5.0f, -15.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
-        glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3(2.4f, -0.4f, -3.5f),
+        glm::vec3( -2.0f, -1.0f, 0.0f),
+        glm::vec3( 0.0f, -0.7f, 0.0f),
+        glm::vec3( 2.0f, -0.7f, 0.0f),
+        glm::vec3( -1.0f,  2.7f, 0.0f),
+        glm::vec3(-4.0f, -0.5f, 0.0f),
     };
 
     // load textures (we now use a utility function to keep the code more organized)
@@ -236,7 +244,7 @@ int main()
 
         // be sure to activate shader when setting uniforms/drawing objects
 
-        // Проэктор
+        // Прожектор
         if (newLightType == 0)
         {
             if (newLightType != lightType)
@@ -256,8 +264,8 @@ int main()
             lightingShader.setVec3("light.ambient", 0.1f, 0.1f, 0.1f);
             // we configure the diffuse intensity slightly higher; the right lighting conditions differ with each lighting method and environment.
             // each environment and lighting type requires some tweaking to get the best out of your environment.
-            lightingShader.setVec3("light.diffuse", 0.8f, 0.8f, 0.8f);
-            lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
+            lightingShader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f);
+            lightingShader.setVec3("light.specular", 0.8f, 0.8f, 0.8f);
             lightingShader.setFloat("light.constant", 1.0f);
             lightingShader.setFloat("light.linear", 0.09f);
             lightingShader.setFloat("light.quadratic", 0.032f);
@@ -282,7 +290,7 @@ int main()
 
             // light properties
             lightingShader.setVec3("light.ambient", 0.2f, 0.2f, 0.2f);
-            lightingShader.setVec3("light.diffuse", 0.5f, 0.5f, 0.5f);
+            lightingShader.setVec3("light.diffuse", 1.0f, 1.0f, 1.0f);
             lightingShader.setVec3("light.specular", 1.0f, 1.0f, 1.0f);
 
             // material properties
@@ -329,8 +337,12 @@ int main()
         {
             model = glm::mat4(1.0f);
             model = glm::translate(model, objPosition[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(0.0f, 1.0f, 0.0f));
+            if (i == 3)
+            {
+                model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+                model = glm::rotate(model, glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+            }
+            model = glm::scale(model, glm::vec3(scales[i], scales[i], scales[i]));
             lightingShader.setMat4("model", model);
             models[i].Draw(lightingShader);
         }
@@ -343,8 +355,11 @@ int main()
             lightCubeShader.setMat4("view", view);
             model = glm::mat4(1.0f);
             model = glm::translate(model, lightPos);
-            model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+            model = glm::scale(model, glm::vec3(0.2f));
             lightCubeShader.setMat4("model", model);
+
+            //glBindVertexArray(lightCubeVAO);
+            //glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
         // ОбменBuffers
