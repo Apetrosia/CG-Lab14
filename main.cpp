@@ -28,6 +28,8 @@ float lastFrame = 0.0f;
 glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
 int lightType = 2;
 int newLightType = 2;
+
+int shadintTypeCount = 4;
 int shadingType = 0;
 int newShadingType = 0;
 
@@ -92,6 +94,8 @@ void processInput(sf::Window& window)
         newShadingType = 1;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num6))
         newShadingType = 2;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Num7))
+        newShadingType = 3;
 
     // Проверка закрытия окна при нажатии ESC
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
@@ -193,8 +197,23 @@ int main()
 
     Init();
 
+    Shader shaders[] = {
+        Shader("5.4.spot.vs", "5.4.phong.fs"),
+        Shader("5.4.spot.vs", "5.4.toonshading.fs"),
+        Shader("5.4.spot.vs", "5.4.rim.fs"),
+        Shader("5.4.spot.vs", "5.4.ami_guch.fs"),
+        Shader("5.1.directional.vs", "5.1.phong.fs"),
+        Shader("5.1.directional.vs", "5.1.toonshading.fs"),
+        Shader("5.1.directional.vs", "5.1.rim.fs"),
+        Shader("5.1.directional.vs", "5.1.ami_guch.fs"),
+        Shader("5.2.point.vs", "5.2.phong.fs"),
+        Shader("5.2.point.vs", "5.2.toonshading.fs"),
+        Shader("5.2.point.vs", "5.2.rim.fs"),
+        Shader("5.2.point.vs", "5.2.ami_guch.fs")
+    };
+
     // Точечный источник света
-    Shader lightingShader("5.2.light_casters.vs", "5.2.light_casters.fs");
+    Shader lightingShader = shaders[8];
 
     vector<Model> models;
 
@@ -218,18 +237,6 @@ int main()
         glm::vec3( 2.0f, -0.7f, 0.0f),
         glm::vec3( -1.0f,  2.7f, 0.0f),
         glm::vec3(-4.0f, -0.5f, 0.0f),
-    };
-
-    Shader shaders[] = {
-        Shader("5.4.light_casters.vs", "5.4.light_casters.fs"),
-        Shader("5.4.toonshading.vs", "5.4.toonshading.fs"),
-        Shader("5.4.rim.vs", "5.4.rim.fs"),
-        Shader("5.1.light_casters.vs", "5.1.light_casters.fs"),
-        Shader("5.1.toonshading.vs", "5.1.toonshading.fs"),
-        Shader("5.1.rim.vs", "5.1.rim.fs"),
-        Shader("5.2.light_casters.vs", "5.2.light_casters.fs"),
-        Shader("5.2.toonshading.vs", "5.2.toonshading.fs"),
-        Shader("5.2.rim.vs", "5.2.rim.fs")
     };
 
     // shader configuration
@@ -266,7 +273,7 @@ int main()
             {
                 lightType = newLightType;
                 shadingType = newShadingType;
-                lightingShader = shaders[lightType * 3 + shadingType];
+                lightingShader = shaders[lightType * shadintTypeCount + shadingType];
             }
 
             lightingShader.use();
@@ -298,7 +305,7 @@ int main()
             {
                 lightType = newLightType;
                 shadingType = newShadingType;
-                lightingShader = shaders[lightType * 3 + shadingType];
+                lightingShader = shaders[lightType * shadintTypeCount + shadingType];
             }
 
             lightingShader.use();
@@ -320,7 +327,7 @@ int main()
             {
                 lightType = newLightType;
                 shadingType = newShadingType;
-                lightingShader = shaders[lightType * 3 + shadingType];
+                lightingShader = shaders[lightType * shadintTypeCount + shadingType];
             }
 
             // be sure to activate shader when setting uniforms/drawing objects
