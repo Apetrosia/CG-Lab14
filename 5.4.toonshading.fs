@@ -43,13 +43,13 @@ void main()
 
     vec3 color;
     if (intensity > 0.95)
-        color = textureColor * vec3(1.0, 0.5, 0.5);
+        color = textureColor * vec3(1.0, 1.0, 1.0);
     else if (intensity > 0.5)
-        color = textureColor * vec3(0.6, 0.3, 0.3);
+        color = textureColor * vec3(0.6, 0.6, 0.6);
     else if (intensity > 0.25)
-        color = textureColor * vec3(0.4, 0.2, 0.2);
+        color = textureColor * vec3(0.4, 0.4, 0.4);
     else
-        color = textureColor * vec3(0.2, 0.1, 0.1);
+        color = textureColor * vec3(0.2, 0.2, 0.2);
 
     FragColor = vec4(color, 1.0);
 }
