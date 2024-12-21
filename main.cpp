@@ -322,7 +322,6 @@ int main()
             if (newLightType != lightType)
             {
                 lightingShader = Shader("5.4.light_casters.vs", "5.4.light_casters.fs");
-                lightCubeShader = Shader("5.4.light_cube.vs", "5.4.light_cube.fs");
                 lightType = newLightType;
             }
 
@@ -354,7 +353,6 @@ int main()
             if (newLightType != lightType)
             {
                 lightingShader = Shader("5.1.light_casters.vs", "5.1.light_casters.fs");
-                lightCubeShader = Shader("5.1.light_cube.vs", "5.1.light_cube.fs");
                 lightType = newLightType;
             }
 
@@ -376,7 +374,6 @@ int main()
             if (newLightType != lightType)
             {
                 lightingShader = Shader("5.2.light_casters.vs", "5.2.light_casters.fs");
-                lightCubeShader = Shader("5.2.light_cube.vs", "5.2.light_cube.fs");
                 lightType = newLightType;
             }
 
