@@ -51,9 +51,9 @@ void main()
     specular *= attenuation;
 
     // Rim Lighting
-    float rimFactor = 1.0 - max(dot(viewDir, norm), 0.0); // Высчитываем угол между нормалью и направлением на наблюдателя
-    rimFactor = pow(rimFactor, 3.0); // Управление интенсивностью и мягкостью подсветки
-    vec3 rimColor = vec3(0.8, 0.8, 1.0) * rimFactor; // Цвет рим-света (настраиваемый параметр)
+    float rimFactor = 1.0 - max(dot(viewDir, norm), 0.0);
+    rimFactor = pow(rimFactor, 3.0);
+    vec3 rimColor = vec3(0.8, 0.8, 1.0) * rimFactor;
     
     // Final Color
     vec3 result = ambient + diffuse + specular + rimColor;

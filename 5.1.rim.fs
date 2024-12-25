@@ -41,8 +41,8 @@ void main()
     
     // Rim Lighting
     float rimFactor = 1.0 - max(dot(viewDir, norm), 0.0);
-    rimFactor = pow(rimFactor, 3.0); // Контролирует мягкость края
-    vec3 rimColor = vec3(0.6, 0.6, 1.0) * rimFactor; // Цвет подсветки (можно настроить)
+    rimFactor = pow(rimFactor, 3.0);
+    vec3 rimColor = vec3(0.6, 0.6, 1.0) * rimFactor;
         
     vec3 result = ambient + diffuse + specular + rimColor;
     FragColor = vec4(result, 1.0);
